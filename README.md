@@ -1,73 +1,98 @@
-# Welcome to your Lovable project
+# SalesConnect Organization Frontend
 
-## Project info
+Organization-facing web app for managing WhatsApp messaging operations, contacts, campaigns, templates, team members, and subscription settings.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+This frontend is built with Vite + React + TypeScript and talks to a backend API (configured via `VITE_API_URL`).
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Authentication (login, signup, protected routes)
+- Dashboard with organization stats, activity, and subscription usage
+- Contacts management (CRUD, assignment, bulk import)
+- Campaigns management (create, send, pause/resume/cancel/resend)
+- WhatsApp templates management (CRUD, status polling)
+- WhatsApp numbers management and WhatsApp connection flow
+- Team management (invite, roles, remove members)
+- Settings for organization/profile/password and billing/subscription
+- Public legal pages (`/privacy-policy`, `/data-deletion`)
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+- React 18 + TypeScript
+- Vite
+- React Router
+- TanStack Query
+- shadcn/ui + Radix UI
+- Tailwind CSS
+- Vitest + Testing Library
 
-Changes made via Lovable will be committed automatically to this repo.
+## Prerequisites
 
-**Use your preferred IDE**
+- Node.js 20+ (Node 22 works)
+- npm
+- A running backend API for SalesConnect Organization
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Environment Variables
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Create a `.env` file in the project root (if not already present):
 
-Follow these steps:
+```env
+VITE_API_URL=http://localhost:3000
+```
+
+Notes:
+
+- If `VITE_API_URL` is not set, the app defaults to `http://localhost:3000`.
+- Auth tokens are stored in `localStorage` under `auth_token`.
+
+## Getting Started
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The Vite dev server runs on port `8080` by default (see `vite.config.ts`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Available Scripts
 
-**Use GitHub Codespaces**
+- `npm run dev` - Start the Vite dev server
+- `npm run build` - Production build
+- `npm run build:dev` - Development-mode build
+- `npm run preview` - Preview the production build
+- `npm run lint` - Run ESLint
+- `npm test` - Run Vitest once
+- `npm run test:watch` - Run Vitest in watch mode
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Main App Routes
 
-## What technologies are used for this project?
+- `/login`, `/signup`
+- `/dashboard`
+- `/contacts`
+- `/campaigns`
+- `/templates`
+- `/whatsapp-numbers`
+- `/connect-whatsapp`
+- `/team`
+- `/settings`
+- `/privacy-policy`
+- `/data-deletion`
 
-This project is built with:
+## Backend/API Expectations
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- The frontend sends `Authorization: Bearer <token>` when a user is logged in.
+- API responses with a `{ data: ... }` envelope are unwrapped automatically by the client.
+- The app expects endpoints for auth, organization stats/activity, contacts, campaigns, WhatsApp templates/numbers, team management, and billing.
 
-## How can I deploy this project?
+## Project Structure (High Level)
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+- `src/pages` - Route pages (dashboard, contacts, campaigns, settings, auth, legal pages)
+- `src/components` - Reusable UI and feature components
+- `src/contexts` - Auth and organization state providers
+- `src/lib/api.ts` - API client and endpoint wrappers
+- `src/types` - Shared TypeScript domain types
 
-## Can I connect a custom domain to my Lovable project?
+## Notes
 
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- This project includes billing/subscription UI flows in `Settings`, including plan selection and payment verification handling.
+- The UI uses protected/public route guards based on auth state from `AuthContext`.
