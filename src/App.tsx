@@ -1,23 +1,22 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { OrganizationProvider } from "@/contexts/OrganizationContext";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Pages
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
 import Dashboard from "@/pages/Dashboard";
+import Contacts from "@/pages/Contacts";
 import Team from "@/pages/Team";
 import WhatsAppNumbers from "@/pages/WhatsAppNumbers";
 import Templates from "@/pages/Templates";
 import Campaigns from "@/pages/Campaigns";
 import Settings from "@/pages/Settings";
+import ConnectWhatsApp from "@/pages/ConnectWhatsApp";
 import NotFound from "@/pages/NotFound";
-
-const queryClient = new QueryClient();
+import PrivacyPolicy from "@/pages/PrivacyPolicy";
+import DataDeletion from "@/pages/DataDeletion";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -75,6 +74,8 @@ function AppRoutes() {
           </PublicRoute>
         }
       />
+      <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+      <Route path="/data-deletion" element={<DataDeletion />} />
 
       {/* Protected Routes */}
       <Route
@@ -86,18 +87,18 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/team"
+        path="/contacts"
         element={
           <PrivateRoute>
-            <Team />
+            <Contacts />
           </PrivateRoute>
         }
       />
       <Route
-        path="/whatsapp-numbers"
+        path="/campaigns"
         element={
           <PrivateRoute>
-            <WhatsAppNumbers />
+            <Campaigns />
           </PrivateRoute>
         }
       />
@@ -110,10 +111,26 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/campaigns"
+        path="/whatsapp-numbers"
         element={
           <PrivateRoute>
-            <Campaigns />
+            <WhatsAppNumbers />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/connect-whatsapp"
+        element={
+          <PrivateRoute>
+            <ConnectWhatsApp />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/team"
+        element={
+          <PrivateRoute>
+            <Team />
           </PrivateRoute>
         }
       />
@@ -128,7 +145,7 @@ function AppRoutes() {
 
       {/* Redirects */}
       <Route path="/" element={<Navigate to="/login" replace />} />
-      
+
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -136,19 +153,11 @@ function AppRoutes() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <OrganizationProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppRoutes />
-          </BrowserRouter>
-        </OrganizationProvider>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <>
+    <Toaster />
+    <Sonner />
+    <AppRoutes />
+  </>
 );
 
 export default App;

@@ -114,6 +114,15 @@ export default function Login() {
               Create one
             </Link>
           </p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            <Link to="/privacy-policy" className="hover:text-foreground">
+              Privacy Policy
+            </Link>{" "}
+            |{" "}
+            <Link to="/data-deletion" className="hover:text-foreground">
+              Data Deletion
+            </Link>
+          </p>
         </div>
       </div>
 

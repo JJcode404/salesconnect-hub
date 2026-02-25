@@ -1,19 +1,19 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { MessageSquare, ArrowRight, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { MessageSquare, ArrowRight, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Signup() {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    organizationName: '',
+    name: "",
+    email: "",
+    password: "",
+    organizationName: "",
+    organizationSlug: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const { signup } = useAuth();
@@ -21,7 +21,20 @@ export default function Signup() {
   const { toast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value };
+
+      // Auto-generate slug from organization name
+      if (name === "organizationName") {
+        updated.organizationSlug = value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-+|-+$/g, "");
+      }
+
+      return updated;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,15 +44,15 @@ export default function Signup() {
     try {
       await signup(formData);
       toast({
-        title: 'Welcome to SalesConnect!',
-        description: 'Your organization has been created successfully.',
+        title: "Welcome to SalesConnect!",
+        description: "Your organization has been created successfully.",
       });
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
       toast({
-        title: 'Signup failed',
-        description: 'Something went wrong. Please try again.',
-        variant: 'destructive',
+        title: "Signup failed",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -60,38 +73,26 @@ export default function Signup() {
           </div>
 
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Create your account
+            </h1>
             <p className="mt-2 text-muted-foreground">
               Start your 14-day free trial. No credit card required.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First name</Label>
-                <Input
-                  id="firstName"
-                  name="firstName"
-                  placeholder="Alex"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  required
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last name</Label>
-                <Input
-                  id="lastName"
-                  name="lastName"
-                  placeholder="Johnson"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  required
-                  className="h-11"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="name">Full name</Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="Alex Johnson"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                className="h-11"
+              />
             </div>
 
             <div className="space-y-2">
@@ -119,6 +120,11 @@ export default function Signup() {
                 required
                 className="h-11"
               />
+              {formData.organizationSlug && (
+                <p className="text-xs text-muted-foreground">
+                  Slug: {formData.organizationSlug}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -156,9 +162,21 @@ export default function Signup() {
           </form>
 
           <p className="mt-8 text-center text-sm text-muted-foreground">
-            Already have an account?{' '}
-            <Link to="/login" className="font-medium text-brand hover:text-brand-hover">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="font-medium text-brand hover:text-brand-hover"
+            >
               Sign in
+            </Link>
+          </p>
+          <p className="mt-4 text-center text-xs text-muted-foreground">
+            <Link to="/privacy-policy" className="hover:text-foreground">
+              Privacy Policy
+            </Link>{" "}
+            |{" "}
+            <Link to="/data-deletion" className="hover:text-foreground">
+              Data Deletion
             </Link>
           </p>
         </div>
@@ -171,20 +189,23 @@ export default function Signup() {
             Join 2,000+ sales teams
           </h2>
           <p className="mt-4 text-lg text-primary-foreground/80">
-            Companies of all sizes use SalesConnect to automate their WhatsApp outreach 
-            and close more deals.
+            Companies of all sizes use SalesConnect to automate their WhatsApp
+            outreach and close more deals.
           </p>
 
           <div className="mt-12 rounded-xl bg-primary-foreground/10 p-6 backdrop-blur">
             <p className="text-primary-foreground/90 italic">
-              "SalesConnect transformed our sales process. We've increased our response 
-              rate by 3x since switching from email to WhatsApp outreach."
+              "SalesConnect transformed our sales process. We've increased our
+              response rate by 3x since switching from email to WhatsApp
+              outreach."
             </p>
             <div className="mt-4 flex items-center gap-3">
               <div className="h-10 w-10 rounded-full bg-primary-foreground/20" />
               <div>
                 <p className="font-medium">Sarah Chen</p>
-                <p className="text-sm text-primary-foreground/70">VP of Sales, TechCorp</p>
+                <p className="text-sm text-primary-foreground/70">
+                  VP of Sales, TechCorp
+                </p>
               </div>
             </div>
           </div>

@@ -1,15 +1,16 @@
 // User & Auth Types
-export type UserRole = 'OWNER' | 'ADMIN' | 'SALES_REP';
+export type UserRole = "OWNER" | "ADMIN" | "SALES_REP";
 
 export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  firstName?: string; // Derived from name for backwards compatibility
+  lastName?: string; // Derived from name for backwards compatibility
   avatarUrl?: string;
   role: UserRole;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AuthResponse {
@@ -19,18 +20,25 @@ export interface AuthResponse {
 }
 
 // Organization Types
-export type SubscriptionStatus = 'TRIAL' | 'ACTIVE' | 'PAST_DUE' | 'CANCELLED';
+export type SubscriptionStatus =
+  | "TRIAL"
+  | "ACTIVE"
+  | "PAST_DUE"
+  | "CANCELED"
+  | "CANCELLED";
+export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "CANCELED";
+export type PromotionDiscountType = "PERCENTAGE" | "FIXED";
 
 export interface Organization {
   id: string;
   name: string;
   slug: string;
   plan: string;
-  subscriptionStatus: SubscriptionStatus;
-  messageLimit: number;
-  messagesUsed: number;
-  createdAt: string;
-  updatedAt: string;
+  subscriptionStatus?: SubscriptionStatus;
+  messageLimit?: number;
+  messagesUsed?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface OrganizationStats {
@@ -40,6 +48,89 @@ export interface OrganizationStats {
   messagesThisMonth: number;
   activeWhatsAppNumbers: number;
   activeTemplates: number;
+}
+
+export interface OrganizationSubscription {
+  id?: string;
+  status: SubscriptionStatus;
+  plan: string;
+  messageLimit: number;
+  messagesUsed: number;
+  remaining?: number;
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  provider?: string;
+  providerRef?: string | null;
+}
+
+export interface BillingPlan {
+  code: string;
+  name: string;
+  description: string;
+  messageLimit: number;
+  amount: number;
+  currency: string;
+  periodDays: number;
+}
+
+export interface BillingPayment {
+  id: string;
+  provider: string;
+  status: PaymentStatus;
+  planCode: string;
+  messageLimit: number;
+  periodDays: number;
+  originalAmount?: number | null;
+  discountAmount?: number;
+  amount: number;
+  currency: string;
+  promotionCode?: string | null;
+  promotion?: PromotionPreview | null;
+  merchantReference: string;
+  orderTrackingId?: string | null;
+  providerReference?: string | null;
+  paymentMethod?: string | null;
+  paymentAccount?: string | null;
+  paidAt?: string | null;
+  expiresAt?: string | null;
+  failureReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface BillingOverview {
+  subscription: OrganizationSubscription | null;
+  remainingMessages: number;
+  canSend: boolean;
+  plans: BillingPlan[];
+  payments: BillingPayment[];
+}
+
+export interface PromotionPreview {
+  id: string;
+  code: string;
+  description?: string | null;
+  discountType: PromotionDiscountType;
+  discountValue: number;
+  active: boolean;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  maxUses?: number | null;
+}
+
+export interface PromotionValidationPricing {
+  baseAmount: number;
+  discountAmount: number;
+  finalAmount: number;
+  currency: string;
+}
+
+export interface PromotionValidationResult {
+  valid: boolean;
+  code?: string | null;
+  reason?: string | null;
+  pricing: PromotionValidationPricing;
+  promotion?: PromotionPreview | null;
 }
 
 export interface ActivityLog {
@@ -60,7 +151,7 @@ export interface TeamMember {
   lastName: string;
   avatarUrl?: string;
   role: UserRole;
-  status: 'ACTIVE' | 'PENDING' | 'INACTIVE';
+  status: "ACTIVE" | "PENDING" | "INACTIVE";
   joinedAt: string;
 }
 
@@ -85,8 +176,8 @@ export interface WhatsAppNumber {
 }
 
 // WhatsApp Template Types
-export type TemplateCategory = 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
-export type TemplateLanguage = 'en' | 'es' | 'pt' | 'fr' | 'de';
+export type TemplateCategory = "MARKETING" | "UTILITY" | "AUTHENTICATION";
+export type TemplateLanguage = "en" | "es" | "pt" | "fr" | "de";
 
 export interface WhatsAppTemplate {
   id: string;
@@ -94,8 +185,13 @@ export interface WhatsAppTemplate {
   content: string;
   category: TemplateCategory;
   language: TemplateLanguage;
+  bodyParamsCount?: number;
+  bodyParamKeys?: string[];
   isActive: boolean;
   usageCount: number;
+  metaTemplateId?: string | null;
+  status?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -106,7 +202,14 @@ export interface Campaign {
   name: string;
   templateId: string;
   templateName: string;
-  status: 'DRAFT' | 'SENDING' | 'COMPLETED' | 'FAILED';
+  status:
+    | "DRAFT"
+    | "QUEUED"
+    | "SENDING"
+    | "PAUSED"
+    | "CANCELED"
+    | "COMPLETED"
+    | "FAILED";
   totalContacts: number;
   messagesSent: number;
   messagesDelivered: number;
@@ -137,8 +240,8 @@ export interface Contact {
   firstName?: string;
   lastName?: string;
   email?: string;
-  tags: string[];
-  isSubscribed: boolean;
+  status?: string;
+  consent?: boolean;
   lastContactedAt?: string;
   createdAt: string;
 }

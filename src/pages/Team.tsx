@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useOrganization } from '@/contexts/OrganizationContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { AppLayout, PageContainer } from '@/components/layout/AppLayout';
-import { PageHeader } from '@/components/ui/page-header';
-import { StatusBadge } from '@/components/ui/status-badge';
-import { EmptyState } from '@/components/ui/empty-state';
-import { TableSkeleton } from '@/components/ui/loading-skeleton';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useState } from "react";
+import { useOrganization } from "@/contexts/OrganizationContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { AppLayout, PageContainer } from "@/components/layout/AppLayout";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TableSkeleton } from "@/components/ui/loading-skeleton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -17,7 +17,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -26,21 +26,21 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,22 +50,31 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Users, Plus, MoreHorizontal, Mail, Shield, Trash2, Loader2 } from 'lucide-react';
-import { TeamMember, UserRole } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { formatDistanceToNow } from 'date-fns';
+} from "@/components/ui/alert-dialog";
+import {
+  Users,
+  Plus,
+  MoreHorizontal,
+  Mail,
+  Shield,
+  Trash2,
+  Loader2,
+} from "lucide-react";
+import { TeamMember, UserRole } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import { formatDistanceToNow } from "date-fns";
+import { api } from "@/lib/api";
 
 const roleLabels: Record<UserRole, string> = {
-  OWNER: 'Owner',
-  ADMIN: 'Admin',
-  SALES_REP: 'Sales Rep',
+  OWNER: "Owner",
+  ADMIN: "Admin",
+  SALES_REP: "Sales Rep",
 };
 
-const roleVariants: Record<UserRole, 'brand' | 'info' | 'default'> = {
-  OWNER: 'brand',
-  ADMIN: 'info',
-  SALES_REP: 'default',
+const roleVariants: Record<UserRole, "brand" | "info" | "default"> = {
+  OWNER: "brand",
+  ADMIN: "info",
+  SALES_REP: "default",
 };
 
 export default function Team() {
@@ -73,32 +82,40 @@ export default function Team() {
   const { hasRole, user } = useAuth();
   const { toast } = useToast();
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
-  const [inviteRole, setInviteRole] = useState<UserRole>('SALES_REP');
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName] = useState("");
+  const [invitePhone, setInvitePhone] = useState("");
+  const [inviteRole, setInviteRole] = useState<UserRole>("SALES_REP");
   const [isInviting, setIsInviting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TeamMember | null>(null);
 
-  const canManageTeam = hasRole(['OWNER', 'ADMIN']);
-  const isOwner = hasRole(['OWNER']);
+  const canManageTeam = hasRole(["OWNER", "ADMIN"]);
+  const isOwner = hasRole(["OWNER"]);
 
   const handleInvite = async () => {
     setIsInviting(true);
     try {
-      // await api.team.invite({ email: inviteEmail, role: inviteRole });
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await api.team.invite({
+        email: inviteEmail,
+        role: inviteRole,
+        name: inviteName,
+        phone: inviteRole === "SALES_REP" ? invitePhone : undefined,
+      });
       toast({
-        title: 'Invitation sent',
+        title: "Invitation sent",
         description: `An invitation has been sent to ${inviteEmail}`,
       });
       setInviteOpen(false);
-      setInviteEmail('');
-      setInviteRole('SALES_REP');
+      setInviteEmail("");
+      setInviteName("");
+      setInvitePhone("");
+      setInviteRole("SALES_REP");
       refreshTeam();
     } catch (error) {
       toast({
-        title: 'Failed to send invitation',
-        description: 'Please try again.',
-        variant: 'destructive',
+        title: "Failed to send invitation",
+        description: "Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsInviting(false);
@@ -107,17 +124,17 @@ export default function Team() {
 
   const handleRoleChange = async (memberId: string, newRole: UserRole) => {
     try {
-      // await api.team.updateRole(memberId, newRole);
+      await api.team.updateRole(memberId, newRole);
       toast({
-        title: 'Role updated',
-        description: 'Team member role has been updated.',
+        title: "Role updated",
+        description: "Team member role has been updated.",
       });
       refreshTeam();
     } catch (error) {
       toast({
-        title: 'Failed to update role',
-        description: 'Please try again.',
-        variant: 'destructive',
+        title: "Failed to update role",
+        description: "Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -125,18 +142,18 @@ export default function Team() {
   const handleRemove = async () => {
     if (!deleteTarget) return;
     try {
-      // await api.team.remove(deleteTarget.id);
+      await api.team.remove(deleteTarget.userId);
       toast({
-        title: 'Member removed',
+        title: "Member removed",
         description: `${deleteTarget.firstName} has been removed from the team.`,
       });
       setDeleteTarget(null);
       refreshTeam();
     } catch (error) {
       toast({
-        title: 'Failed to remove member',
-        description: 'Please try again.',
-        variant: 'destructive',
+        title: "Failed to remove member",
+        description: "Please try again.",
+        variant: "destructive",
       });
     }
   };
@@ -166,6 +183,16 @@ export default function Team() {
                   </DialogHeader>
                   <div className="space-y-4 py-4">
                     <div className="space-y-2">
+                      <Label htmlFor="name">Full name</Label>
+                      <Input
+                        id="name"
+                        type="text"
+                        placeholder="Alex Johnson"
+                        value={inviteName}
+                        onChange={(e) => setInviteName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
                       <Label htmlFor="email">Email address</Label>
                       <Input
                         id="email"
@@ -175,31 +202,56 @@ export default function Team() {
                         onChange={(e) => setInviteEmail(e.target.value)}
                       />
                     </div>
+                    {inviteRole === "SALES_REP" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone number</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="+1234567890"
+                          value={invitePhone}
+                          onChange={(e) => setInvitePhone(e.target.value)}
+                        />
+                      </div>
+                    )}
                     <div className="space-y-2">
                       <Label htmlFor="role">Role</Label>
-                      <Select value={inviteRole} onValueChange={(v) => setInviteRole(v as UserRole)}>
+                      <Select
+                        value={inviteRole}
+                        onValueChange={(v) => setInviteRole(v as UserRole)}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {isOwner && <SelectItem value="ADMIN">Admin</SelectItem>}
+                          {isOwner && (
+                            <SelectItem value="ADMIN">Admin</SelectItem>
+                          )}
                           <SelectItem value="SALES_REP">Sales Rep</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
-                        {inviteRole === 'ADMIN'
-                          ? 'Admins can manage team members and settings.'
-                          : 'Sales reps can send messages and manage campaigns.'}
+                        {inviteRole === "ADMIN"
+                          ? "Admins can manage team members and settings."
+                          : "Sales reps can send messages and manage campaigns."}
                       </p>
                     </div>
                   </div>
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => setInviteOpen(false)}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setInviteOpen(false)}
+                    >
                       Cancel
                     </Button>
                     <Button
                       onClick={handleInvite}
-                      disabled={!inviteEmail || isInviting}
+                      disabled={
+                        !inviteName ||
+                        !inviteEmail ||
+                        (inviteRole === "SALES_REP" && !invitePhone) ||
+                        isInviting
+                      }
                       className="bg-brand text-brand-foreground hover:bg-brand-hover"
                     >
                       {isInviting ? (
@@ -230,7 +282,10 @@ export default function Team() {
                 description="Invite your first team member to get started."
                 action={
                   canManageTeam
-                    ? { label: 'Invite Member', onClick: () => setInviteOpen(true) }
+                    ? {
+                        label: "Invite Member",
+                        onClick: () => setInviteOpen(true),
+                      }
                     : undefined
                 }
               />
@@ -261,10 +316,14 @@ export default function Team() {
                             <p className="font-medium">
                               {member.firstName} {member.lastName}
                               {member.userId === user?.id && (
-                                <span className="ml-2 text-xs text-muted-foreground">(You)</span>
+                                <span className="ml-2 text-xs text-muted-foreground">
+                                  (You)
+                                </span>
                               )}
                             </p>
-                            <p className="text-sm text-muted-foreground">{member.email}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {member.email}
+                            </p>
                           </div>
                         </div>
                       </TableCell>
@@ -275,50 +334,65 @@ export default function Team() {
                       </TableCell>
                       <TableCell>
                         <StatusBadge
-                          variant={member.status === 'ACTIVE' ? 'success' : 'warning'}
+                          variant={
+                            member.status === "ACTIVE" ? "success" : "warning"
+                          }
                           dot
                         >
-                          {member.status === 'ACTIVE' ? 'Active' : 'Pending'}
+                          {member.status === "ACTIVE" ? "Active" : "Pending"}
                         </StatusBadge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {formatDistanceToNow(new Date(member.joinedAt), { addSuffix: true })}
+                        {formatDistanceToNow(new Date(member.joinedAt), {
+                          addSuffix: true,
+                        })}
                       </TableCell>
                       <TableCell>
-                        {canManageTeam && member.role !== 'OWNER' && member.userId !== user?.id && (
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              {isOwner && (
-                                <>
-                                  <DropdownMenuItem
-                                    onClick={() =>
-                                      handleRoleChange(
-                                        member.id,
-                                        member.role === 'ADMIN' ? 'SALES_REP' : 'ADMIN'
-                                      )
-                                    }
-                                  >
-                                    <Shield className="mr-2 h-4 w-4" />
-                                    Make {member.role === 'ADMIN' ? 'Sales Rep' : 'Admin'}
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                </>
-                              )}
-                              <DropdownMenuItem
-                                className="text-destructive focus:text-destructive"
-                                onClick={() => setDeleteTarget(member)}
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Remove Member
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        )}
+                        {canManageTeam &&
+                          member.role !== "OWNER" &&
+                          member.userId !== user?.id && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {isOwner && (
+                                  <>
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleRoleChange(
+                                          member.userId,
+                                          member.role === "ADMIN"
+                                            ? "SALES_REP"
+                                            : "ADMIN",
+                                        )
+                                      }
+                                    >
+                                      <Shield className="mr-2 h-4 w-4" />
+                                      Make{" "}
+                                      {member.role === "ADMIN"
+                                        ? "Sales Rep"
+                                        : "Admin"}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                  </>
+                                )}
+                                <DropdownMenuItem
+                                  className="text-destructive focus:text-destructive"
+                                  onClick={() => setDeleteTarget(member)}
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Remove Member
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -329,13 +403,17 @@ export default function Team() {
         </div>
 
         {/* Delete Confirmation */}
-        <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>
+        <AlertDialog
+          open={!!deleteTarget}
+          onOpenChange={() => setDeleteTarget(null)}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Remove team member?</AlertDialogTitle>
               <AlertDialogDescription>
-                Are you sure you want to remove {deleteTarget?.firstName} {deleteTarget?.lastName}{' '}
-                from your organization? They will lose access immediately.
+                Are you sure you want to remove {deleteTarget?.firstName}{" "}
+                {deleteTarget?.lastName} from your organization? They will lose
+                access immediately.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

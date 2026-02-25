@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Phone,
+  Contact,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -24,10 +25,11 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Team', href: '/team', icon: Users },
-  { name: 'WhatsApp Numbers', href: '/whatsapp-numbers', icon: Phone },
-  { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'Contacts', href: '/contacts', icon: Contact },
   { name: 'Campaigns', href: '/campaigns', icon: Send },
+  { name: 'Templates', href: '/templates', icon: FileText },
+  { name: 'WhatsApp Numbers', href: '/whatsapp-numbers', icon: Phone },
+  { name: 'Team', href: '/team', icon: Users },
 ];
 
 const secondaryNavigation = [

@@ -1,6 +1,12 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { User, Organization, UserRole } from '@/types';
-import { api } from '@/lib/api';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+} from "react";
+import { User, Organization, UserRole } from "@/types";
+import { api } from "@/lib/api";
 
 interface AuthContextType {
   user: User | null;
@@ -8,37 +14,24 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  signup: (data: { email: string; password: string; firstName: string; lastName: string; organizationName: string }) => Promise<void>;
-  logout: () => void;
-  updateProfile: (data: { firstName?: string; lastName?: string; avatarUrl?: string }) => Promise<void>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  signup: (data: {
+    organizationName: string;
+    organizationSlug: string;
+    name: string;
+    email: string;
+    password: string;
+  }) => Promise<void>;
+  logout: () => Promise<void>;
+  updateProfile: (data: { name?: string; email?: string }) => Promise<void>;
+  changePassword: (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ) => Promise<void>;
   hasRole: (roles: UserRole[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Mock data for demo purposes
-const mockUser: User = {
-  id: '1',
-  email: 'admin@salesconnect.io',
-  firstName: 'Alex',
-  lastName: 'Johnson',
-  role: 'OWNER',
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-const mockOrganization: Organization = {
-  id: '1',
-  name: 'Acme Sales Team',
-  slug: 'acme-sales',
-  plan: 'Professional',
-  subscriptionStatus: 'ACTIVE',
-  messageLimit: 10000,
-  messagesUsed: 3247,
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -47,18 +40,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchUser = useCallback(async () => {
     const token = api.getToken();
+
     if (!token) {
       setIsLoading(false);
       return;
     }
 
     try {
-      // For demo, use mock data
-      // const { user, organization } = await api.auth.me();
-      setUser(mockUser);
-      setOrganization(mockOrganization);
+      const { user, organization } = await api.auth.me();
+
+      // Parse name into firstName/lastName for backward compatibility
+      const nameParts = user.name?.split(" ") || [];
+      const firstName = nameParts[0] || user.name;
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      setUser({ ...user, firstName, lastName });
+      setOrganization(organization);
     } catch (error) {
+      console.error("Failed to fetch user:", error);
       api.setToken(null);
+      setUser(null);
+      setOrganization(null);
     } finally {
       setIsLoading(false);
     }
@@ -71,51 +73,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // For demo, accept any credentials
-      // const { user, organization, token } = await api.auth.login(email, password);
-      api.setToken('demo-token');
-      setUser(mockUser);
-      setOrganization(mockOrganization);
+      const { user, organization, token } = await api.auth.login(
+        email,
+        password,
+      );
+      api.setToken(token);
+
+      // Parse name into firstName/lastName for backward compatibility
+      const nameParts = user.name?.split(" ") || [];
+      const firstName = nameParts[0] || user.name;
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      setUser({ ...user, firstName, lastName });
+      setOrganization(organization);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signup = async (data: { email: string; password: string; firstName: string; lastName: string; organizationName: string }) => {
+  const signup = async (data: {
+    organizationName: string;
+    organizationSlug: string;
+    name: string;
+    email: string;
+    password: string;
+  }) => {
     setIsLoading(true);
     try {
-      // For demo, simulate signup
-      // const { user, organization, token } = await api.auth.signup(data);
-      api.setToken('demo-token');
-      setUser({
-        ...mockUser,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-      });
-      setOrganization({
-        ...mockOrganization,
-        name: data.organizationName,
-      });
+      const { user, organization, token } = await api.auth.signup(data);
+      api.setToken(token);
+
+      // Parse name into firstName/lastName for backward compatibility
+      const nameParts = user.name?.split(" ") || [];
+      const firstName = nameParts[0] || user.name;
+      const lastName = nameParts.slice(1).join(" ") || "";
+
+      setUser({ ...user, firstName, lastName });
+      setOrganization(organization);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    api.setToken(null);
-    setUser(null);
-    setOrganization(null);
+  const logout = async () => {
+    try {
+      await api.auth.logout();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      api.setToken(null);
+      setUser(null);
+      setOrganization(null);
+    }
   };
 
-  const updateProfile = async (data: { firstName?: string; lastName?: string; avatarUrl?: string }) => {
+  const updateProfile = async (data: { name?: string; email?: string }) => {
     if (!user) return;
-    // await api.auth.updateProfile(data);
-    setUser({ ...user, ...data });
+
+    const { user: updatedUser } = await api.auth.updateProfile(data);
+    setUser(updatedUser);
   };
 
-  const changePassword = async (currentPassword: string, newPassword: string) => {
-    // await api.auth.changePassword({ currentPassword, newPassword });
+  const changePassword = async (
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ) => {
+    await api.auth.changePassword({
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
   };
 
   const hasRole = (roles: UserRole[]) => {
@@ -129,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         organization,
         isLoading,
-        isAuthenticated: !!user,
+        isAuthenticated: Boolean(user),
         login,
         signup,
         logout,
@@ -145,8 +173,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }
