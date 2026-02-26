@@ -12,6 +12,7 @@ import Team from "@/pages/Team";
 import WhatsAppNumbers from "@/pages/WhatsAppNumbers";
 import Templates from "@/pages/Templates";
 import Campaigns from "@/pages/Campaigns";
+import Billing from "@/pages/Billing";
 import Settings from "@/pages/Settings";
 import ConnectWhatsApp from "@/pages/ConnectWhatsApp";
 import NotFound from "@/pages/NotFound";
@@ -131,6 +132,14 @@ function AppRoutes() {
         element={
           <PrivateRoute>
             <Team />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/billing"
+        element={
+          <PrivateRoute>
+            <Billing />
           </PrivateRoute>
         }
       />

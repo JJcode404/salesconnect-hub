@@ -6,6 +6,7 @@ import {
   MessageSquare,
   FileText,
   Send,
+  CreditCard,
   Settings,
   LogOut,
   ChevronLeft,
@@ -33,15 +34,34 @@ const navigation = [
 ];
 
 const secondaryNavigation = [
+  { name: 'Billing', href: '/billing', icon: CreditCard },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
-  const { user, organization, logout } = useAuth();
+  const { user, organization, logout, hasRole } = useAuth();
+  const isOwner = hasRole(['OWNER']);
+  const visibleSecondaryNavigation = secondaryNavigation.filter((item) =>
+    item.name === 'Billing' ? isOwner : true
+  );
 
-  const isActive = (href: string) => location.pathname === href;
+  const isActive = (href: string) => {
+    const [path, queryString] = href.split('?');
+    if (location.pathname !== path) return false;
+
+    const currentParams = new URLSearchParams(location.search);
+
+    if (queryString) {
+      const targetParams = new URLSearchParams(queryString);
+      return Array.from(targetParams.entries()).every(
+        ([key, value]) => currentParams.get(key) === value
+      );
+    }
+
+    return true;
+  };
 
   const NavItem = ({ item }: { item: typeof navigation[0] }) => {
     const active = isActive(item.href);
@@ -116,7 +136,7 @@ export function AppSidebar() {
 
       {/* Secondary Navigation */}
       <div className="border-t border-sidebar-border p-3">
-        {secondaryNavigation.map((item) => (
+        {visibleSecondaryNavigation.map((item) => (
           <NavItem key={item.name} item={item} />
         ))}
       </div>

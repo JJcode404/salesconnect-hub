@@ -1,4 +1,7 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || "http://localhost:3000"
+).replace(/\/+$/, "");
+const IS_NGROK_URL = /https?:\/\/[^/]*ngrok/i.test(API_BASE_URL);
 
 class ApiClient {
   private token: string | null = null;
@@ -30,6 +33,11 @@ class ApiClient {
       ...options.headers,
     };
 
+    if (IS_NGROK_URL) {
+      (headers as Record<string, string>)["ngrok-skip-browser-warning"] =
+        "true";
+    }
+
     if (token) {
       (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
     }
@@ -39,10 +47,41 @@ class ApiClient {
       headers,
     });
 
+    const contentType = response.headers.get("content-type") || "";
+    const isJsonResponse = contentType.toLowerCase().includes("application/json");
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = isJsonResponse
+        ? await response.json().catch(() => ({}))
+        : {};
+      const responseText = !isJsonResponse
+        ? await response.text().catch(() => "")
+        : "";
+      const looksLikeHtml =
+        responseText.trimStart().startsWith("<!DOCTYPE") ||
+        responseText.trimStart().startsWith("<html");
       throw new Error(
-        error.message || `Request failed with status ${response.status}`,
+        error.message ||
+          (looksLikeHtml && IS_NGROK_URL
+            ? "Received HTML from ngrok instead of JSON. Ensure the tunnel is pointing to your backend and ngrok browser warning is bypassed."
+            : `Request failed with status ${response.status}`),
+      );
+    }
+
+    if (!isJsonResponse) {
+      const responseText = await response.text().catch(() => "");
+      const looksLikeHtml =
+        responseText.trimStart().startsWith("<!DOCTYPE") ||
+        responseText.trimStart().startsWith("<html");
+
+      if (looksLikeHtml && IS_NGROK_URL) {
+        throw new Error(
+          "Received HTML from ngrok instead of JSON. Ensure the tunnel is pointing to your backend and ngrok browser warning is bypassed.",
+        );
+      }
+
+      throw new Error(
+        `Expected JSON response but received '${contentType || "unknown"}'`,
       );
     }
 
