@@ -133,10 +133,16 @@ export default function Dashboard() {
   };
 
   const monthlyMessagesUsed = Math.max(0, subscriptionMessagesUsed);
-  const usagePercentage =
+  const rawUsagePercentage =
     messageLimit > 0
-      ? Math.min(100, Math.round((monthlyMessagesUsed / messageLimit) * 100))
+      ? Math.min(100, (monthlyMessagesUsed / messageLimit) * 100)
       : 0;
+  const usageProgressValue =
+    rawUsagePercentage > 0 ? Math.max(rawUsagePercentage, 1) : 0;
+  const usagePercentageLabel =
+    rawUsagePercentage > 0 && rawUsagePercentage < 1
+      ? "<1% used"
+      : `${Math.round(rawUsagePercentage)}% used`;
 
   const templateUsage = [...templates]
     .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
@@ -245,9 +251,9 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="flex-1 max-w-md">
-                  <Progress value={usagePercentage} className="h-2" />
+                  <Progress value={usageProgressValue} className="h-2" />
                   <p className="mt-1 text-xs text-muted-foreground text-right">
-                    {usagePercentage}% used
+                    {usagePercentageLabel}
                   </p>
                 </div>
               </div>

@@ -70,15 +70,12 @@ export default function Settings() {
 
   const isOwner = hasRole(["OWNER"]);
   const subscription = billingOverview?.subscription;
-  const usagePercentage =
+  const rawUsagePercentage =
     subscription && subscription.messageLimit > 0
-      ? Math.min(
-          100,
-          Math.round(
-            (subscription.messagesUsed / subscription.messageLimit) * 100,
-          ),
-        )
+      ? Math.min(100, (subscription.messagesUsed / subscription.messageLimit) * 100)
       : 0;
+  const usagePercentage =
+    rawUsagePercentage > 0 ? Math.max(rawUsagePercentage, 1) : 0;
   const currentPlanCode = (subscription?.plan || organization?.plan || "FREE")
     .toUpperCase()
     .trim();
