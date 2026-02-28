@@ -21,6 +21,7 @@ interface AuthContextType {
     email: string;
     password: string;
   }) => Promise<void>;
+  googleAuth: (credential: string, organizationName?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (data: { name?: string; email?: string }) => Promise<void>;
   changePassword: (
@@ -70,25 +71,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, [fetchUser]);
 
+  const applyAuthSession = (payload: {
+    user: User & { name?: string };
+    organization: Organization;
+    token: string;
+  }) => {
+    const { user, organization, token } = payload;
+    api.setToken(token);
+
+    // Parse name into firstName/lastName for backward compatibility
+    const nameParts = user.name?.split(" ") || [];
+    const firstName = nameParts[0] || user.name;
+    const lastName = nameParts.slice(1).join(" ") || "";
+
+    setUser({ ...user, firstName, lastName });
+    setOrganization(organization);
+  };
+
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const { user, organization, token } = await api.auth.login(
-        email,
-        password,
-      );
-      api.setToken(token);
-
-      // Parse name into firstName/lastName for backward compatibility
-      const nameParts = user.name?.split(" ") || [];
-      const firstName = nameParts[0] || user.name;
-      const lastName = nameParts.slice(1).join(" ") || "";
-
-      setUser({ ...user, firstName, lastName });
-      setOrganization(organization);
-    } finally {
-      setIsLoading(false);
-    }
+    const authData = await api.auth.login(email, password);
+    applyAuthSession(authData);
   };
 
   const signup = async (data: {
@@ -98,21 +100,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string;
     password: string;
   }) => {
-    setIsLoading(true);
-    try {
-      const { user, organization, token } = await api.auth.signup(data);
-      api.setToken(token);
+    const authData = await api.auth.signup(data);
+    applyAuthSession(authData);
+  };
 
-      // Parse name into firstName/lastName for backward compatibility
-      const nameParts = user.name?.split(" ") || [];
-      const firstName = nameParts[0] || user.name;
-      const lastName = nameParts.slice(1).join(" ") || "";
-
-      setUser({ ...user, firstName, lastName });
-      setOrganization(organization);
-    } finally {
-      setIsLoading(false);
-    }
+  const googleAuth = async (credential: string, organizationName?: string) => {
+    const authData = await api.auth.googleAuth(credential, organizationName);
+    applyAuthSession(authData);
   };
 
   const logout = async () => {
@@ -160,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: Boolean(user),
         login,
         signup,
+        googleAuth,
         logout,
         updateProfile,
         changePassword,

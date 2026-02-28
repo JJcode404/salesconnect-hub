@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { MessageSquare, ArrowRight, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,7 +18,8 @@ export default function Signup() {
     organizationSlug: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const { signup } = useAuth();
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const { signup, googleAuth } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -35,6 +38,41 @@ export default function Signup() {
 
       return updated;
     });
+  };
+
+  const handleGoogleAuth = async (credential: string) => {
+    const organizationName = formData.organizationName.trim();
+    if (!organizationName) {
+      toast({
+        title: "Organization name required",
+        description:
+          "Enter your organization name, then continue with Google.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGoogleLoading(true);
+
+    try {
+      await googleAuth(credential, organizationName);
+      toast({
+        title: "Welcome to SalesConnect!",
+        description: "Your account was created with Google successfully.",
+      });
+      navigate("/dashboard");
+    } catch (error) {
+      toast({
+        title: "Google sign-up failed",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Please try again or sign up with email and password.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGoogleLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -81,13 +119,30 @@ export default function Signup() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-4">
+            <GoogleAuthButton
+              mode="signup"
+              onCredential={handleGoogleAuth}
+              disabled={isLoading || isGoogleLoading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter organization name below before using Google sign-up.
+            </p>
+            <div className="relative">
+              <Separator />
+              <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
+                or sign up with email
+              </span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-5 space-y-5">
             <div className="space-y-2">
               <Label htmlFor="name">Full name</Label>
               <Input
                 id="name"
                 name="name"
-                placeholder="Alex Johnson"
+                placeholder="Jane Doe"
                 value={formData.name}
                 onChange={handleChange}
                 required
@@ -101,7 +156,7 @@ export default function Signup() {
                 id="email"
                 name="email"
                 type="email"
-                placeholder="you@company.com"
+                placeholder="name@company.com"
                 value={formData.email}
                 onChange={handleChange}
                 required
@@ -114,7 +169,7 @@ export default function Signup() {
               <Input
                 id="organizationName"
                 name="organizationName"
-                placeholder="Acme Inc"
+                placeholder="Acme Corporation"
                 value={formData.organizationName}
                 onChange={handleChange}
                 required
@@ -133,7 +188,6 @@ export default function Signup() {
                 id="password"
                 name="password"
                 type="password"
-                placeholder="••••••••"
                 value={formData.password}
                 onChange={handleChange}
                 required
@@ -148,7 +202,7 @@ export default function Signup() {
             <Button
               type="submit"
               className="h-11 w-full bg-brand text-brand-foreground hover:bg-brand-hover"
-              disabled={isLoading}
+              disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -200,7 +254,11 @@ export default function Signup() {
               outreach."
             </p>
             <div className="mt-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary-foreground/20" />
+              <img
+                src="/avatars/sarah.jpg"
+                alt="Sarah Chen"
+                className="h-10 w-10 rounded-full object-cover ring-2 ring-primary-foreground/20"
+              />
               <div>
                 <p className="font-medium">Sarah Chen</p>
                 <p className="text-sm text-primary-foreground/70">

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { AppLayout, PageContainer } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { api } from "@/lib/api";
@@ -8,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function ConnectWhatsApp() {
   const { refreshWhatsAppNumbers } = useOrganization();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [wabaId, setWabaId] = useState("");
@@ -15,9 +17,36 @@ export default function ConnectWhatsApp() {
   useEffect(() => {
     (async () => {
       try {
-        const base = import.meta.env.VITE_API_URL || "http://localhost:3000";
-        const resp = await fetch(`${base.replace(/\/$/, "")}/config`);
+        const base = (import.meta.env.VITE_API_URL || "http://localhost:3000")
+          .replace(/\/$/, "");
+        const headers: HeadersInit = {
+          Accept: "application/json",
+        };
+
+        if (/https?:\/\/[^/]*ngrok/i.test(base)) {
+          (headers as Record<string, string>)["ngrok-skip-browser-warning"] =
+            "true";
+        }
+
+        const resp = await fetch(`${base}/config`, { headers });
         if (!resp.ok) return;
+        const contentType = resp.headers.get("content-type") || "";
+        if (!contentType.toLowerCase().includes("application/json")) {
+          const text = await resp.text().catch(() => "");
+          const looksLikeHtml =
+            text.trimStart().startsWith("<!DOCTYPE") ||
+            text.trimStart().startsWith("<html");
+
+          if (looksLikeHtml) {
+            throw new Error(
+              "Received HTML instead of JSON from /config. Check VITE_API_URL or ngrok tunnel/browser warning.",
+            );
+          }
+
+          throw new Error(
+            `Expected JSON from /config but got '${contentType || "unknown"}'`,
+          );
+        }
         const json = await resp.json();
         if (json?.businessId) setBusinessId(String(json.businessId));
       } catch (err) {
@@ -50,8 +79,12 @@ export default function ConnectWhatsApp() {
       await api.organization.manualConnectWhatsApp({
         wabaId: wabaId.trim(),
       });
-      toast({ title: "WhatsApp connected" });
       await refreshWhatsAppNumbers();
+      toast({
+        title: "WhatsApp connected successfully",
+        description: "Redirecting you to the dashboard...",
+      });
+      navigate("/dashboard");
     } catch (err: any) {
       toast({
         title: "Manual connection failed",

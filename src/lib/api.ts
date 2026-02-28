@@ -121,6 +121,18 @@ class ApiClient {
         },
       ),
 
+    googleAuth: (credential: string, organizationName?: string) =>
+      this.request<{ user: any; organization: any; token: string }>(
+        "/auth/google",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            credential,
+            ...(organizationName ? { organizationName } : {}),
+          }),
+        },
+      ),
+
     me: () => this.request<{ user: any; organization: any }>("/auth/me"),
 
     logout: () =>
