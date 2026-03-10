@@ -48,7 +48,9 @@ class ApiClient {
     });
 
     const contentType = response.headers.get("content-type") || "";
-    const isJsonResponse = contentType.toLowerCase().includes("application/json");
+    const isJsonResponse = contentType
+      .toLowerCase()
+      .includes("application/json");
 
     if (!response.ok) {
       const error = isJsonResponse
@@ -177,37 +179,44 @@ class ApiClient {
         method: "PUT",
         body: JSON.stringify(data),
       }),
-    startConnectWhatsApp: (data: { accessToken: string }) =>
-      this.request<any>("/organization/connect-whatsapp/start", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-    completeConnectWhatsApp: (data: {
-      wabaId: string;
-      accessToken: string;
-    }) =>
-      this.request<any>("/organization/connect-whatsapp/complete", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-    completeEmbeddedConnectWhatsApp: (data: {
+
+    /*
+  =============================
+  connect whatsapp
+  =============================
+  */
+
+    connectWhatsAppBusiness: (data: {
       code: string;
       wabaId: string;
       phoneNumberId?: string;
     }) =>
-      this.request<any>("/organization/connect-whatsapp/embedded-complete", {
+      this.request<any>("/organization/connect-whatsapp", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    manualConnectWhatsApp: (data: {
-      wabaId: string;
-    }) =>
-      this.request<any>("/organization/connect-whatsapp/manual", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-  };
 
+    /*
+  =============================
+  get any whatsapp connection
+  =============================
+  */
+
+    getWhatsAppConnection: () =>
+      this.request<{
+        organization: {
+          businessId: string;
+          whatsappBusinessAccountId: string;
+          whatsappStatus: string;
+        };
+        numbers: {
+          id: string;
+          displayName: string;
+          phoneNumber: string;
+          isPrimary: boolean;
+        }[];
+      }>("/organization/whatsapp-connection"),
+  };
   // Billing endpoints
   billing = {
     getPlans: () => this.request<any>("/billing/plans"),
