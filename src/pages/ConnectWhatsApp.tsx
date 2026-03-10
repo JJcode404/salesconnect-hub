@@ -113,27 +113,35 @@ export default function ConnectWhatsApp() {
   */
 
   useEffect(() => {
-    const handleMessage = async (event: MessageEvent) => {
+    const handleMessage = async (event) => {
       if (!META_SIGNUP_ORIGINS.has(event.origin)) return;
 
-      const data =
-        typeof event.data === "string"
-          ? JSON.parse(event.data)
-          : event.data || {};
+      let data = event.data;
+
+      if (typeof data === "string") {
+        try {
+          data = JSON.parse(data);
+        } catch {
+          return;
+        }
+      }
 
       if (data.type !== "WA_EMBEDDED_SIGNUP") return;
       if (String(data.event).toUpperCase() !== "FINISH") return;
 
-      const payload = data.data || data;
+      const payload = data.data || {};
 
       const wabaId = payload.waba_id;
-      const code = payload.code;
       const phoneNumberId = payload.phone_number_id;
+
+      // FIX: handle Meta auth code
+      const code =
+        payload.authorization_code || payload.code || payload.auth_code;
 
       if (!wabaId || !code) {
         toast({
           title: "Signup failed",
-          description: "Missing data returned from Meta",
+          description: "Missing authorization code from Meta",
           variant: "destructive",
         });
         setLoading(false);
@@ -163,7 +171,7 @@ export default function ConnectWhatsApp() {
         toast({
           title: "WhatsApp connected successfully",
         });
-      } catch (err: any) {
+      } catch (err) {
         toast({
           title: "Connection failed",
           description: err?.message || "Unknown error",
