@@ -14,6 +14,7 @@ export default defineConfig(({ mode }) => ({
     // ✅ allow ngrok + localhost
 
     allowedHosts: [
+      "https://org.sales-connect.site",
       "localhost",
       "localhost:8080",
       "localhost:8081",
