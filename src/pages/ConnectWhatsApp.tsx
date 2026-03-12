@@ -12,6 +12,7 @@ const META_SIGNUP_ORIGINS = new Set([
   "https://www.facebook.com",
   "https://web.facebook.com",
   "https://business.facebook.com",
+  "https://connect.facebook.net",
 ]);
 
 const SIGNUP_TIMEOUT = 1000 * 60 * 3;
@@ -20,11 +21,11 @@ export default function ConnectWhatsApp() {
   const { toast } = useToast();
   const { refreshWhatsAppNumbers } = useOrganization();
 
-  const signupTimer = useRef(null);
-  const retryCount = useRef(0);
+  const signupTimer = useRef<any>(null);
+  const signupCodeRef = useRef<string | null>(null);
 
-  const [loading, setLoading] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [connected, setConnected] = useState(false);
   const [loadingConnection, setLoadingConnection] = useState(true);
 
@@ -36,14 +37,12 @@ export default function ConnectWhatsApp() {
   });
 
   /*
-  ====================================
+  ===============================
   LOAD EXISTING CONNECTION
-  ====================================
+  ===============================
   */
 
   const loadExistingConnection = useCallback(async () => {
-    console.log("Loading WhatsApp connection");
-
     try {
       const result = await api.organization.getWhatsAppConnection();
 
@@ -73,9 +72,9 @@ export default function ConnectWhatsApp() {
   }, [loadExistingConnection]);
 
   /*
-  ====================================
-  META SDK LOADER
-  ====================================
+  ===============================
+  LOAD META SDK
+  ===============================
   */
 
   useEffect(() => {
@@ -84,9 +83,8 @@ export default function ConnectWhatsApp() {
       return;
     }
 
-    console.log("Opening  Setup");
-
     const script = document.createElement("script");
+
     script.src = "https://connect.facebook.net/en_US/sdk.js";
     script.async = true;
     script.defer = true;
@@ -94,12 +92,11 @@ export default function ConnectWhatsApp() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      console.log("Meta SDK loaded");
-
       window.FB.init({
         appId: META_APP_ID,
         cookie: true,
         xfbml: false,
+        autoLogAppEvents: true,
         version: "v24.0",
       });
 
@@ -108,28 +105,23 @@ export default function ConnectWhatsApp() {
   }, []);
 
   /*
-  ====================================
+  ===============================
   START EMBEDDED SIGNUP
-  ====================================
+  ===============================
   */
 
   const startOnboarding = () => {
     if (!sdkLoaded) {
       toast({
         title: "Loading Setup",
-        description: "Please wait a moment",
         variant: "destructive",
       });
       return;
     }
 
-    console.log("Starting WhatsApp Embedded Signup");
-
     setLoading(true);
 
     signupTimer.current = setTimeout(() => {
-      console.warn("Signup timeout");
-
       setLoading(false);
 
       toast({
@@ -140,24 +132,20 @@ export default function ConnectWhatsApp() {
     }, SIGNUP_TIMEOUT);
 
     window.FB.login(
-      function (response) {
-        console.log("FB.login response", response);
-
+      function (response: any) {
         if (!response.authResponse) {
-          console.warn("User cancelled login");
-
           setLoading(false);
-
+          console.warn("User cancelled login");
           return;
         }
 
         const code = response.authResponse.code;
 
-        if (!code) {
-          console.error("Authorization code missing");
-          setLoading(false);
+        if (code) {
+          signupCodeRef.current = code;
         }
       },
+
       {
         config_id: META_CONFIG_ID,
         response_type: "code",
@@ -165,24 +153,21 @@ export default function ConnectWhatsApp() {
         scope:
           "whatsapp_business_management,whatsapp_business_messaging,business_management",
         extras: {
-          setup: {},
+          version: "v3",
         },
       },
     );
   };
 
   /*
-  ====================================
-  signup response message  from meta listener
-  ====================================
+  ===============================
+  META MESSAGE LISTENER
+  ===============================
   */
 
   useEffect(() => {
-    const handleMessage = async (event) => {
-      console.log("Meta message event:", event);
-
+    const handleMessage = async (event: MessageEvent) => {
       if (!META_SIGNUP_ORIGINS.has(event.origin)) {
-        console.warn("Ignored origin:", event.origin);
         return;
       }
 
@@ -200,10 +185,9 @@ export default function ConnectWhatsApp() {
         return;
       }
 
-      console.log("Embedded signup event:", data);
+      const eventType = String(data.event).toUpperCase();
 
-      if (String(data.event).toUpperCase() !== "FINISH") {
-        console.log("Signup not finished");
+      if (!["FINISH", "FINISHED", "COMPLETE"].includes(eventType)) {
         return;
       }
 
@@ -213,14 +197,9 @@ export default function ConnectWhatsApp() {
 
       const wabaId = payload.waba_id;
       const phoneNumberId = payload.phone_number_id;
-      const code =
-        payload.authorization_code || payload.code || payload.auth_code;
 
-      console.log("Extracted payload:", {
-        wabaId,
-        phoneNumberId,
-        code,
-      });
+      const code =
+        payload.authorization_code || payload.code || signupCodeRef.current;
 
       if (!code || !wabaId) {
         toast({
@@ -233,22 +212,12 @@ export default function ConnectWhatsApp() {
         return;
       }
 
-      /*
-      ====================================
-     User signed up successfully..so we send data to backend
-      ====================================
-      */
-
       try {
-        console.log("Sending signup data to backend");
-
         const result = await api.organization.connectWhatsAppBusiness({
           code,
           wabaId,
           phoneNumberId,
         });
-
-        console.log("Backend result", result);
 
         await refreshWhatsAppNumbers();
 
@@ -264,16 +233,8 @@ export default function ConnectWhatsApp() {
         toast({
           title: "WhatsApp connected successfully",
         });
-      } catch (err) {
+      } catch (err: any) {
         console.error("Connection error", err);
-
-        if (retryCount.current < 2) {
-          retryCount.current += 1;
-
-          console.warn("Retrying backend request");
-
-          return handleMessage(event);
-        }
 
         toast({
           title: "Connection failed",
@@ -295,9 +256,7 @@ export default function ConnectWhatsApp() {
   if (loadingConnection) {
     return (
       <AppLayout>
-        <PageContainer>
-          <p>Loading WhatsApp connection...</p>
-        </PageContainer>
+        <PageContainer>Loading WhatsApp connection...</PageContainer>
       </AppLayout>
     );
   }
@@ -306,69 +265,27 @@ export default function ConnectWhatsApp() {
     <AppLayout>
       <PageContainer>
         {!connected && (
-          <div className="space-y-6">
-            <h1 className="text-2xl font-semibold">Connect WhatsApp</h1>
-
-            <Button
-              onClick={startOnboarding}
-              disabled={loading || !sdkLoaded}
-              className="bg-green-600 text-white"
-            >
-              {loading ? "Opening..." : "Start Onboarding"}
-            </Button>
-          </div>
+          <Button
+            onClick={startOnboarding}
+            disabled={loading || !sdkLoaded}
+            className="bg-green-600 text-white"
+          >
+            {loading ? "Opening Setup..." : "Start WhatsApp Onboarding"}
+          </Button>
         )}
 
         {connected && (
-          <div className="space-y-6">
-            <h1 className="text-2xl font-semibold">WhatsApp Connected</h1>
+          <div>
+            <h2>WhatsApp Connected</h2>
 
-            <div className="border rounded p-4 space-y-2">
-              <p>
-                <b>Business ID:</b> {accountData.businessId}
-              </p>
+            <p>Business ID: {accountData.businessId}</p>
+            <p>WABA ID: {accountData.wabaId}</p>
 
-              <p>
-                <b>WABA ID:</b> {accountData.wabaId}
-              </p>
-
-              <p>
-                <b>Status:</b> {accountData.status}
-              </p>
-            </div>
-
-            <div className="border rounded p-4 space-y-3">
-              <h3>Phone Numbers</h3>
-
-              {accountData.numbers.map((num) => (
-                <div
-                  key={num.id}
-                  className="border rounded p-3 flex justify-between"
-                >
-                  <div>
-                    <p>{num.displayName}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {num.phoneNumber}
-                    </p>
-                  </div>
-
-                  {num.isPrimary && (
-                    <span className="text-xs bg-green-100 px-2 py-1 rounded">
-                      Primary
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <Button
-              onClick={() => {
-                setConnected(false);
-                startOnboarding();
-              }}
-            >
-              Reconnect WhatsApp
-            </Button>
+            {accountData.numbers.map((num: any) => (
+              <div key={num.id}>
+                {num.displayName} ({num.phoneNumber})
+              </div>
+            ))}
           </div>
         )}
       </PageContainer>

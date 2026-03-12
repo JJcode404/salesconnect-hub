@@ -13,15 +13,7 @@ export default defineConfig(({ mode }) => ({
     },
     // ✅ allow ngrok + localhost
 
-    allowedHosts: [
-      "https://org.sales-connect.site",
-      "localhost",
-      "localhost:8080",
-      "localhost:8081",
-      "d85a-62-8-79-110.ngrok-free.app",
-      "b084-62-8-79-110.ngrok-free.app",
-      "ea50-62-8-79-110.ngrok-free.app",
-    ],
+    allowedHosts: ["https://org.sales-connect.site"],
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(
     Boolean,
